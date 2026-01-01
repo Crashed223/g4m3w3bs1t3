@@ -15,6 +15,9 @@
         .dot { position: absolute; background: var(--secondary); border-radius: 50%; opacity: 0.3; animation: float linear infinite; }
         @keyframes float { 0% { transform: translateY(100vh) translateX(0); } 100% { transform: translateY(-100px) translateX(50px); } }
         
+        .confetti { position: fixed; width: 10px; height: 10px; pointer-events: none; z-index: 9999; animation: confetti-fall 3s linear forwards; }
+        @keyframes confetti-fall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        
         nav { background: rgba(10,10,10,0.95); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
         .logo { font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
         .logo span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
@@ -159,6 +162,7 @@
             <li><a onclick="showPage('apps')" id="apps-link">Apps</a></li>
             <li><a onclick="showPage('minigames')" id="minigames-link">Mini Games</a></li>
         </ul>
+        <button class="music-btn" id="theme-btn" onclick="toggleTheme()">🎨</button>
         <button class="music-btn" id="music-btn" onclick="toggleMusic()">🎵 Music</button>
     </nav>
 
@@ -175,6 +179,11 @@
             </div>
             <div class="section-header"><h2>🔥 <span>Featured</span></h2></div>
             <div class="grid" id="featured"></div>
+            
+            <div id="recent-section" style="display:none; margin-top: 40px;">
+                <div class="section-header"><h2>🕐 <span>Recently Played</span></h2></div>
+                <div class="grid" id="recent"></div>
+            </div>
         </div>
 
         <div class="page" id="games-page">
@@ -215,7 +224,10 @@
     </div>
 
     <div class="modal" id="modal"><div class="modal-box"><button class="modal-close" onclick="closeModal()">×</button><div id="modal-body"></div></div></div>
-    <audio id="music" loop src="https://assets.mixkit.co/music/preview/mixkit-tech-house-vibes-130.mp3"></audio>
+    <audio id="music" loop crossorigin="anonymous">
+        <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3" type="audio/mpeg">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+    </audio>
 
 <script>
 const G=[
@@ -268,6 +280,32 @@ const G=[
 const cats=['All',...new Set(G.map(g=>g.c))].sort();
 let favs=JSON.parse(localStorage.getItem('fav')||'[]'),activeF='All';
 
+// Theme toggle
+const themes=[
+    {name:'dark',primary:'#ff6b35',secondary:'#00f5d4',accent:'#9b5de5'},
+    {name:'neon',primary:'#00ff00',secondary:'#ff00ff',accent:'#00ffff'},
+    {name:'purple',primary:'#a855f7',secondary:'#ec4899',accent:'#6366f1'}
+];
+let currentTheme=0;
+try{
+    const saved=parseInt(localStorage.getItem('theme'));
+    if(!isNaN(saved)&&saved>=0&&saved<themes.length)currentTheme=saved;
+}catch(e){}
+(function(){
+    const t=themes[currentTheme];
+    document.documentElement.style.setProperty('--primary',t.primary);
+    document.documentElement.style.setProperty('--secondary',t.secondary);
+    document.documentElement.style.setProperty('--accent',t.accent);
+})();
+function toggleTheme(){
+    currentTheme=(currentTheme+1)%themes.length;
+    const t=themes[currentTheme];
+    document.documentElement.style.setProperty('--primary',t.primary);
+    document.documentElement.style.setProperty('--secondary',t.secondary);
+    document.documentElement.style.setProperty('--accent',t.accent);
+    try{localStorage.setItem('theme',currentTheme);}catch(e){}
+}
+
 const esc=t=>{const d=document.createElement('div');d.textContent=t;return d.innerHTML};
 const emoji=c=>({Action:'🏃',Puzzle:'🧩',Arcade:'👾',Shooter:'🔫',Racing:'🏎️',Sports:'⚽',Strategy:'♟️',Multiplayer:'👥',Sandbox:'🏗️',Simulation:'🎭',Horror:'👻'})[c]||'🎮';
 
@@ -276,7 +314,7 @@ function card(g){
     return`<div class="card" data-c="${g.c}" data-n="${g.n.toLowerCase()}">
         <div class="card-head"><div class="card-icon">${emoji(g.c)}</div><button class="fav-btn ${f?'active':''}" onclick="event.stopPropagation();toggleFav('${esc(g.n)}',this)">${f?'★':'☆'}</button></div>
         <h3>${esc(g.n)}</h3><p>${esc(g.d)}</p><span class="card-tag">${g.c}</span>
-        <button class="play-btn" onclick="event.stopPropagation();play('${esc(g.u)}')">Play</button></div>`;
+        <button class="play-btn" onclick="event.stopPropagation();play('${esc(g.u)}','${esc(g.n)}')">Play</button></div>`;
 }
 
 function load(){
@@ -284,6 +322,7 @@ function load(){
     document.getElementById('games-grid').innerHTML=G.map(card).join('');
     document.getElementById('count').textContent=G.length+' games';
     document.getElementById('filters').innerHTML=cats.map(c=>`<button class="filter-btn ${c==='All'?'active':''}" onclick="setF('${c}')">${c}</button>`).join('');
+    renderRecent();
 }
 
 function filter(){
@@ -294,8 +333,8 @@ function filter(){
     });
 }
 function setF(c){activeF=c;document.querySelectorAll('.filter-btn').forEach(b=>b.classList.toggle('active',b.textContent===c));filter();}
-function play(u){window.open(u,'_blank');}
-function randomGame(){const g=G[Math.floor(Math.random()*G.length)];window.open(g.u,'_blank');}
+function play(u,name){addRecent(name);window.open(u,'_blank');}
+function randomGame(){confetti();const g=G[Math.floor(Math.random()*G.length)];setTimeout(()=>{addRecent(g.n);window.open(g.u,'_blank');},300);}
 
 function toggleFav(n,b){
     const i=favs.indexOf(n);
@@ -321,8 +360,20 @@ function renderFavs(){
 let playing=false;
 function toggleMusic(){
     const m=document.getElementById('music'),b=document.getElementById('music-btn');
-    if(playing){m.pause();b.classList.remove('playing');}
-    else{m.volume=0.3;m.play();b.classList.add('playing');}
+    if(playing){
+        m.pause();
+        b.classList.remove('playing');
+        b.textContent='🎵 Music';
+    } else {
+        m.volume=0.3;
+        m.play().then(()=>{
+            b.classList.add('playing');
+            b.textContent='🎵 Playing';
+        }).catch(e=>{
+            b.textContent='🎵 Error';
+            setTimeout(()=>b.textContent='🎵 Music',2000);
+        });
+    }
     playing=!playing;
 }
 
@@ -380,6 +431,24 @@ let rxS,rxSt,rxTs;
 function rx(){rxS='wait';rxTs=JSON.parse(localStorage.getItem('rxT')||'[]');const best=rxTs.length?Math.min(...rxTs):'-',avg=rxTs.length?Math.round(rxTs.reduce((a,b)=>a+b,0)/rxTs.length):'-';openModal(`<h2>⚡ Reaction</h2><div class="rx-box wait" id="rxB" onclick="rxC()">Click to Start</div><div class="rx-stats"><div class="rx-stat"><div class="rx-val" id="rxL">-</div><div class="rx-lbl">Last</div></div><div class="rx-stat"><div class="rx-val" id="rxBe">${best==='-'?'-':best+'ms'}</div><div class="rx-lbl">Best</div></div><div class="rx-stat"><div class="rx-val" id="rxAv">${avg==='-'?'-':avg+'ms'}</div><div class="rx-lbl">Avg</div></div></div>`);}
 function rxC(){const b=document.getElementById('rxB');if(rxS==='wait'){rxS='ready';b.className='rx-box ready';b.textContent='Wait...';window.rxTo=setTimeout(()=>{rxS='go';rxSt=Date.now();b.className='rx-box go';b.textContent='CLICK!';},1000+Math.random()*3000);}else if(rxS==='ready'){clearTimeout(window.rxTo);rxS='wait';b.className='rx-box wait';b.textContent='Too early! Try again';}else if(rxS==='go'){const t=Date.now()-rxSt;rxTs.push(t);if(rxTs.length>10)rxTs.shift();localStorage.setItem('rxT',JSON.stringify(rxTs));rxS='wait';b.className='rx-box wait';b.textContent=t+'ms - Click again';document.getElementById('rxL').textContent=t+'ms';document.getElementById('rxBe').textContent=Math.min(...rxTs)+'ms';document.getElementById('rxAv').textContent=Math.round(rxTs.reduce((a,b)=>a+b,0)/rxTs.length)+'ms';}}
 
+// Recently played
+let recent=JSON.parse(localStorage.getItem('recent')||'[]');
+function addRecent(name){
+    recent=recent.filter(n=>n!==name);
+    recent.unshift(name);
+    if(recent.length>5)recent.pop();
+    localStorage.setItem('recent',JSON.stringify(recent));
+    renderRecent();
+}
+function renderRecent(){
+    const sec=document.getElementById('recent-section');
+    const grid=document.getElementById('recent');
+    if(recent.length===0){sec.style.display='none';return;}
+    sec.style.display='block';
+    const recentGames=recent.map(n=>G.find(g=>g.n===n)).filter(Boolean);
+    grid.innerHTML=recentGames.map(card).join('');
+}
+
 load();
 
 // Create floating dots
@@ -397,6 +466,22 @@ load();
         c.appendChild(d);
     }
 })();
+
+// Confetti
+function confetti(){
+    const colors=['#ff6b35','#00f5d4','#9b5de5','#ffd700','#ff69b4','#00ff00'];
+    for(let i=0;i<40;i++){
+        setTimeout(()=>{
+            const c=document.createElement('div');
+            c.className='confetti';
+            c.style.left=Math.random()*100+'vw';
+            c.style.background=colors[Math.floor(Math.random()*colors.length)];
+            c.style.borderRadius=Math.random()>0.5?'50%':'0';
+            document.body.appendChild(c);
+            setTimeout(()=>c.remove(),3000);
+        },i*30);
+    }
+}
 </script>
 </body>
 </html>
