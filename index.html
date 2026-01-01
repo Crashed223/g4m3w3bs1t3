@@ -18,6 +18,7 @@
         
         .confetti { position: fixed; width: 10px; height: 10px; pointer-events: none; z-index: 9999; animation: confetti-fall 3s linear forwards; }
         @keyframes confetti-fall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        @keyframes star-burst { 0% { transform: translate(0,0) scale(1); opacity: 1; } 100% { transform: translate(var(--x),var(--y)) scale(0); opacity: 0; } }
         
         nav { background: rgba(10,10,10,0.95); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
         .logo { font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 10px; cursor: pointer; }
@@ -457,8 +458,26 @@ function randomGame(){confetti();const g=G[Math.floor(Math.random()*G.length)];s
 function toggleFav(n,b){
     const i=favs.indexOf(n);
     if(i>-1){favs.splice(i,1);b.classList.remove('active');b.textContent='☆';}
-    else{favs.push(n);b.classList.add('active');b.textContent='★';}
+    else{favs.push(n);b.classList.add('active');b.textContent='★';starBurst(b);}
     localStorage.setItem('fav',JSON.stringify(favs));
+}
+
+function starBurst(el){
+    const rect=el.getBoundingClientRect();
+    const colors=['#ffd700','#ffec8b','#fff44f','#ffa500','#ffdf00'];
+    for(let i=0;i<15;i++){
+        const c=document.createElement('div');
+        c.className='confetti';
+        c.style.left=rect.left+rect.width/2+'px';
+        c.style.top=rect.top+'px';
+        c.style.background=colors[Math.floor(Math.random()*colors.length)];
+        c.style.borderRadius=Math.random()>0.5?'50%':'0';
+        c.style.animation='star-burst 0.6s ease-out forwards';
+        c.style.setProperty('--x',(Math.random()-0.5)*100+'px');
+        c.style.setProperty('--y',(Math.random()-0.5)*100+'px');
+        document.body.appendChild(c);
+        setTimeout(()=>c.remove(),600);
+    }
 }
 
 function showPage(p){
