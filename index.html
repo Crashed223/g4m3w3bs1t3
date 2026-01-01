@@ -309,8 +309,16 @@
             <div class="game-card">
                 <h2>Slope</h2>
                 <p>Race down the slope and avoid obstacles in this fast-paced 3D running game!</p>
-                <button class="play-btn" onclick="alert('Game link will be added soon!')">Play Now</button>
+                <button class="play-btn" onclick="loadGame()">Play Now</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Game Page -->
+    <div class="game-page" id="game-page">
+        <button class="back-button" onclick="goBack()">← Back to Games</button>
+        <div class="game-container">
+            <iframe id="game-iframe" src="" allow="accelerometer; gyroscope; fullscreen"></iframe>
         </div>
     </div>
 
@@ -344,6 +352,40 @@
                     successMsg.classList.remove('show');
                 }, 3000);
             }
+        }
+
+        // Load Game Function
+        function loadGame() {
+            const homePage = document.querySelector('.container');
+            const gamePage = document.getElementById('game-page');
+            const gameIframe = document.getElementById('game-iframe');
+            
+            // Hide home page and show game page
+            homePage.classList.add('hidden');
+            gamePage.classList.add('active');
+            
+            // Load the game in iframe
+            gameIframe.src = 'https://slope-game.github.io/';
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        // Go Back Function
+        function goBack() {
+            const homePage = document.querySelector('.container');
+            const gamePage = document.getElementById('game-page');
+            const gameIframe = document.getElementById('game-iframe');
+            
+            // Show home page and hide game page
+            homePage.classList.remove('hidden');
+            gamePage.classList.remove('active');
+            
+            // Clear iframe to stop the game
+            gameIframe.src = '';
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
         }
 
         // Games and Apps links (placeholders for now)
