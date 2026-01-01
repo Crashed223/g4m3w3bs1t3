@@ -19,7 +19,7 @@
         @keyframes confetti-fall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
         
         nav { background: rgba(10,10,10,0.95); padding: 16px 32px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; border-bottom: 1px solid var(--border); }
-        .logo { font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+        .logo { font-size: 26px; font-weight: 800; display: flex; align-items: center; gap: 10px; cursor: pointer; }
         .logo span { background: linear-gradient(135deg, var(--primary), var(--secondary)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .nav-links { display: flex; gap: 6px; list-style: none; flex-wrap: wrap; }
         .nav-links a { color: #fff; text-decoration: none; padding: 10px 18px; border-radius: 10px; font-weight: 500; cursor: pointer; transition: background 0.2s; }
@@ -154,7 +154,7 @@
 <body>
     <div class="dots" id="dots"></div>
     <nav>
-        <div class="logo">🎮 <span>GameHub</span></div>
+        <div class="logo" onclick="showPage('home')">🎮 <span>GameHub</span></div>
         <ul class="nav-links">
             <li><a onclick="showPage('home')" id="home-link" class="active">Home</a></li>
             <li><a onclick="showPage('games')" id="games-link">Games</a></li>
